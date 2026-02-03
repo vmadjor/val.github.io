@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Yes or No</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f0f0f;
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+  }
+
+  /* grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ── card ── */
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .card.hidden {
+    opacity: 0;
+    transform: scale(0.92);
+    pointer-events: none;
+  }
+
+  /* ── buttons ── */
+  .buttons { display: flex; gap: 16px; }
+
+  .btn {
+    position: relative;
+    padding: 12px 36px;
+    border: none;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+  }
+  .btn:active { transform: scale(0.94); }
+
+  .btn-yes {
+    background: linear-gradient(135deg, #e8c547, #d4a830);
+    color: #1a1a1a;
+    box-shadow: 0 4px 24px rgba(212,168,48,0.35);
+  }
+  .btn-yes:hover {
+    box-shadow: 0 6px 30px rgba(212,168,48,0.5);
+    transform: translateY(-2px);
+  }
+
+  .btn-no {
+    background: transparent;
+    color: #666;
+    border: 1.5px solid #333;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.3s, color 0.3s;
+  }
+  .btn-no:hover { border-color: #555; color: #999; }
+  .btn-no.angry { border-color: #c0392b !important; color: #e74c3c !important; }
+
+  /* ── photo / message box ── */
+  .photo-wrap {
+    width: 300px;
+    height: 300px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 3px solid #222;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+    position: relative;
+    transition: border-color 0.3s;
+  }
+  .photo-wrap.red-border { border-color: #c0392b; }
+
+  .photo-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s;
+  }
+
+  /* message overlay */
+  .msg-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .msg-overlay.show { opacity: 1; }
+
+  .msg-overlay .msg-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.55rem;
+    line-height: 1.3;
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+    white-space: pre-line;
+  }
+  .msg-overlay .msg-text.calm  { color: #e8c547; }
+  .msg-overlay .msg-text.angry { color: #e74c3c; }
+
+  /* dark bg behind text */
+  .msg-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(15,15,15,0.88), rgba(15,15,15,0.7));
+    z-index: -1;
+  }
+
+  /* ── shake ── */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    18%      { transform: translateX(-10px); }
+    36%      { transform: translateX(10px); }
+    54%      { transform: translateX(-6px); }
+    72%      { transform: translateX(6px); }
+  }
+  .card.shake { animation: shake 0.45s ease; }
+
+  /* ── reveal ── */
+  .reveal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease 0.2s;
+    z-index: 10;
+  }
+  .reveal.show { opacity: 1; pointer-events: auto; }
+
+  .reveal-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 7vw, 4.5rem);
+    color: #e8c547;
+    text-align: center;
+    line-height: 1.2;
+    text-shadow: 0 0 60px rgba(232,197,71,0.3);
+    animation: pop 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  @keyframes pop {
+    0%  { transform: scale(0.7); opacity: 0; }
+    100%{ transform: scale(1);   opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <div class="buttons">
+    <button class="btn btn-yes" onclick="handleYes()">Yes</button>
+    <button class="btn btn-no"  id="btnNo" onclick="handleNo()">No</button>
+  </div>
+
+  <div class="photo-wrap" id="photoWrap">
+    <img src="val.png" alt="Photo" id="photo" />
+    <div class="msg-overlay" id="msgOverlay">
+      <p class="msg-text calm" id="msgText"></p>
+    </div>
+  </div>
+</div>
+
+<div class="reveal" id="reveal">
+  <p class="reveal-text">Good job bitch</p>
+</div>
+
+<script>
+  const messages = [
+    { text: "Think again",                style: "calm"  },
+    { text: "You suck,\npick again",      style: "angry" },
+    { text: "Are you serious right now?", style: "angry" },
+    { text: "Just… pick yes already.",    style: "angry" },
+    { text: "Bro.",                        style: "angry" },
+    { text: "I'm begging you.",           style: "angry" },
+    { text: "What are you doing?",        style: "angry" },
+    { text: "This is embarrassing.",      style: "angry" },
+    { text: "Come on…",                   style: "angry" },
+    { text: "You're really doing this.",  style: "angry" },
+    { text: "I'm losing it.",             style: "angry" },
+    { text: "Press. Yes. Now.",           style: "angry" },
+    { text: "I can't believe you.",       style: "angry" },
+    { text: "Just do it already!!",       style: "angry" },
+    { text: "PICK YES. NOW.",             style: "angry" },
+  ];
+
+  let noCount = 0;
+
+  const card       = document.getElementById('card');
+  const photo      = document.getElementById('photo');
+  const msgOverlay = document.getElementById('msgOverlay');
+  const msgText    = document.getElementById('msgText');
+  const photoWrap  = document.getElementById('photoWrap');
+  const btnNo      = document.getElementById('btnNo');
+
+  function handleNo() {
+    // replay shake
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+
+    // grab message, cycle back to end if we run out
+    const idx = noCount < messages.length ? noCount : messages.length - 1 - ((messages.length - 1 - noCount) % 1);
+    const msg = messages[Math.min(noCount, messages.length - 1)];
+    noCount++;
+
+    // swap photo → message
+    photo.style.opacity = '0';
+    msgText.textContent = msg.text;
+    msgText.className   = 'msg-text ' + msg.style;
+    msgOverlay.classList.add('show');
+
+    // red border + angry No button after 2nd press
+    if (noCount >= 2) {
+      photoWrap.classList.add('red-border');
+      btnNo.classList.add('angry');
+    }
+  }
+
+  function handleYes() {
+    card.classList.add('hidden');
+    setTimeout(() => {
+      document.getElementById('reveal').classList.add('show');
+    }, 300);
+  }
+</script>
+</body>
+</html>
